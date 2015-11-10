@@ -1,9 +1,9 @@
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
-#include <IRremote.h>
-#include <IRremoteInt.h> // patched to use GPIO PWM pin 12 instead
+#include <BitbangNEC.h>
 
-#define nec_address 0xff00 // pre-multiplied by 0x100 for your convenience (TM)
+#define nec_address 0xff
+#define ir_led        12
 
 // codes found here; reverse the endianness! http://blog.allgaiershops.com/2012/05/10/reversing-an-rgb-led-remote/
 #define nec_power  0x20
@@ -40,19 +40,17 @@ WidgetLCD lcd(0);
 int current_mode = nec_orange;
 boolean restart = false;
 
-IRsend irsend;
-
-void beam_preserve_mode(int code) {
-  irsend.sendNEC(nec_address + code, 16);
+void beam_preserve_mode(int command) {
+  ir_send_nec(nec_address, command);
 }
 
 void rebeam() {
   beam_preserve_mode(current_mode);
 }
 
-void beam(int code) {
-  current_mode = code;
-  beam_preserve_mode(code);
+void beam(int command) {
+  current_mode = command;
+  beam_preserve_mode(command);
 }
 
 BLYNK_WRITE(button_power) {
@@ -76,6 +74,7 @@ BLYNK_WRITE(button_momentary) {
 }
 
 void setup() {
+  ir_setup(ir_led);
   beam(nec_yellow);
   Blynk.begin(auth, "revspace-pub-2.4ghz", "");
   while (!Blynk.connect()) { delay(10); }
